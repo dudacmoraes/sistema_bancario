@@ -1,0 +1,201 @@
+# --- FUNÇÕES DE AJUDA E MENUS ---
+
+def menu_principal():
+    """Mostra o menu principal e retorna a escolha do usuário."""
+    print("\n" + "=-" * 15)
+    print(" BANCO CENTRAL DO BRASIL".center(30))
+    print("=-" * 15)
+    print('''[1] Abrir nova conta
+[2] Acessar uma conta existente
+[3] Listar todas as contas
+[4] Sair''')
+    print("=-" * 15)
+    while True:
+        try:
+            opcao = int(input('Escolha uma opção: '))
+            if 1 <= opcao <= 4:
+                return opcao
+            else:
+                print("Erro! Opção inválida.")
+        except ValueError:
+            print("Erro! Digite um número válido.")
+
+
+def abrir_nova_conta(lista_de_contas, numero_conta_atual):
+    """Pede os dados, cria um dicionário de conta e o adiciona à lista principal."""
+    print("\n--- ABERTURA DE NOVA CONTA ---")
+    nome = str(input('Nome completo: ')).strip().title()
+    cpf = str(input('CPF (apenas números): ')).strip()
+
+    # Validação para não criar clientes com o mesmo CPF
+    for conta in lista_de_contas:
+        if conta['cpf'] == cpf:
+            print("\nErro! Já existe um cliente com este CPF.")
+            return numero_conta_atual  # Retorna o número da conta sem alterar
+
+    while True:
+        try:
+            saldo_inicial = float(input('Depósito inicial: R$'))
+            if saldo_inicial >= 0:
+                break
+            else:
+                print("O depósito inicial não pode ser negativo.")
+        except ValueError:
+            print("Erro! Digite um valor numérico para o depósito.")
+
+    # Criando a nova conta como um dicionário
+    nova_conta = {
+        'numero': numero_conta_atual,
+        'nome': nome,
+        'cpf': cpf,
+        'saldo': saldo_inicial,
+        'extrato': f"Conta criada com saldo inicial de R${saldo_inicial:.2f}\n",
+        'limite_valor_saque': 500.00,
+        'limite_saques_diario': 3,
+        'saques_hoje': 0
+    }
+
+    lista_de_contas.append(nova_conta)
+
+    print("\nConta criada com sucesso!")
+    print(f"Titular: {nova_conta['nome']}, Conta Nº: {nova_conta['numero']}, Saldo: R${nova_conta['saldo']:.2f}")
+
+    return numero_conta_atual + 1  # Retorna o próximo número de conta a ser usado
+
+
+def listar_contas(lista_de_contas):
+    """Mostra todas as contas cadastradas de forma formatada."""
+    print("\n--- LISTA DE CONTAS CADASTRADAS ---")
+    if not lista_de_contas:
+        print("Nenhuma conta cadastrada.")
+    else:
+        for conta in lista_de_contas:
+            print(f"Conta Nº: {conta['numero']} | Titular: {conta['nome']} | CPF: {conta['cpf']}")
+
+
+def acessar_conta(lista_de_contas):
+    """Pede um número de conta e, se encontrar, abre o menu de operações."""
+    try:
+        num_conta = int(input("\nDigite o número da conta que deseja acessar: "))
+    except ValueError:
+        print("Erro! Número de conta inválido.")
+        return
+
+    conta_alvo = None
+    for conta in lista_de_contas:
+        if conta['numero'] == num_conta:
+            conta_alvo = conta
+            break
+
+    if conta_alvo:
+        menu_da_conta(conta_alvo)
+    else:
+        print("Erro! Conta não encontrada.")
+
+
+def menu_da_conta(conta):
+    """Menu de operações para uma conta específica (passada como dicionário)."""
+    while True:
+        saldo_formatado = f"R${conta['saldo']:.2f}".replace('.', ',')
+        print("\n" + "-" * 30)
+        print(f"Olá, {conta['nome']}! | Conta Nº: {conta['numero']}")
+        print(f"Saldo: {saldo_formatado}")
+        print("-" * 30)
+        print('''[1] Depositar
+[2] Sacar
+[3] Ver Extrato
+[4] Voltar ao menu principal''')
+
+        try:
+            opcao = int(input("Escolha uma opção: "))
+        except ValueError:
+            print("Erro! Digite um número válido.")
+            continue
+
+        if opcao == 1:
+            depositar(conta)
+        elif opcao == 2:
+            sacar(conta)
+        elif opcao == 3:
+            mostrar_extrato(conta)
+        elif opcao == 4:
+            print("Voltando ao menu principal...")
+            break
+        else:
+            print("Opção inválida!")
+
+
+# --- FUNÇÕES DE OPERAÇÕES BANCÁRIAS ---
+
+def depositar(conta):
+    """Realiza um depósito na conta (dicionário) fornecida."""
+    try:
+        valor = float(input("Valor do depósito: R$"))
+        if valor > 0:
+            conta['saldo'] += valor
+            conta['extrato'] += f"Depósito: +R${valor:.2f}\n"
+            print("Depósito realizado com sucesso!")
+        else:
+            print("Erro! O valor do depósito deve ser positivo.")
+    except ValueError:
+        print("Erro! Valor inválido.")
+
+
+def sacar(conta):
+    """Realiza um saque na conta (dicionário) fornecida, aplicando as regras."""
+    atingiu_limite_diario = conta['saques_hoje'] >= conta['limite_saques_diario']
+
+    if atingiu_limite_diario:
+        print("Operação falhou. Limite de saques diário atingido.")
+        return
+
+    try:
+        valor = float(input("Valor do saque: R$"))
+        excedeu_limite_valor = valor > conta['limite_valor_saque']
+        saldo_insuficiente = valor > conta['saldo']
+        valor_invalido = valor <= 0
+
+        if valor_invalido:
+            print("Erro! O valor do saque deve ser positivo.")
+        elif excedeu_limite_valor:
+            limite = conta['limite_valor_saque']
+            print(f"Operação falhou. Limite por saque é de R${limite:.2f}.")
+        elif saldo_insuficiente:
+            print("Operação falhou. Saldo insuficiente.")
+        else:
+            conta['saldo'] -= valor
+            conta['saques_hoje'] += 1
+            conta['extrato'] += f"Saque: -R${valor:.2f}\n"
+            print("Saque realizado com sucesso!")
+
+    except ValueError:
+        print("Erro! Valor inválido.")
+
+
+def mostrar_extrato(conta):
+    """Mostra o extrato da conta (dicionário) fornecida."""
+    saldo_formatado = f"R${conta['saldo']:.2f}".replace('.', ',')
+    print(f"\n--- EXTRATO DA CONTA Nº {conta['numero']} ---")
+    print(f"Cliente: {conta['nome']}")
+    print("-" * 30)
+    print(conta['extrato'])
+    print(f"Saldo atual: {saldo_formatado}")
+    print("-" * 30)
+
+
+# --- PROGRAMA PRINCIPAL ---
+contas = []
+proximo_numero_conta = 1
+
+while True:
+    opcao = menu_principal()
+
+    if opcao == 1:
+        proximo_numero_conta = abrir_nova_conta(contas, proximo_numero_conta)
+    elif opcao == 2:
+        acessar_conta(contas)
+    elif opcao == 3:
+        listar_contas(contas)
+    elif opcao == 4:
+        print("Obrigado por usar nosso banco. Volte sempre!")
+        break
