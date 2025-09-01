@@ -1,0 +1,107 @@
+# Nome do arquivo: main.py
+
+from banco_classes import Cliente, Conta
+
+def menu_principal():
+    print("\n" + "=-" * 15)
+    print(" BANCO CENTRAL DA DUDA ".center(30))
+    print("=-" * 15)
+    print('''[1] Abrir nova conta
+[2] Acessar uma conta existente
+[3] Listar todas as contas
+[4] Sair''')
+    print("=-" * 15)
+    while True:
+        try:
+            return int(input('Escolha uma opção: '))
+        except ValueError:
+            print("Erro! Digite um número válido.")
+
+def abrir_nova_conta(lista_de_contas):
+    print("\n--- ABERTURA DE NOVA CONTA ---")
+    nome = str(input('Nome completo: ')).strip().title()
+    nascimento = str(input('Data de nascimento (DD/MM/AAAA): ')).strip()
+    cpf = str(input('CPF (apenas números): ')).strip()
+    
+    # Validação para não criar clientes com o mesmo CPF
+    for conta in lista_de_contas:
+        if conta.cliente.cpf == cpf:
+            print("\nErro! Já existe um cliente com este CPF.")
+            return
+
+    saldo_inicial = float(input('Depósito inicial: R$'))
+
+    novo_cliente = Cliente(nome, nascimento, cpf)
+    nova_conta = Conta(novo_cliente, saldo_inicial)
+    lista_de_contas.append(nova_conta)
+    
+    print("\nConta criada com sucesso!")
+    print(f"Titular: {nova_conta.cliente.nome}, Conta Nº: {nova_conta.numero}, Saldo: R${nova_conta.get_saldo():.2f}")
+
+def listar_contas(lista_de_contas):
+    print("\n--- LISTA DE CONTAS CADASTRADAS ---")
+    if not lista_de_contas:
+        print("Nenhuma conta cadastrada.")
+    else:
+        for conta in lista_de_contas:
+            print(f"Conta Nº: {conta.numero} | Titular: {conta.cliente.nome} | CPF: {conta.cliente.cpf}")
+
+def acessar_conta(lista_de_contas):
+    num_conta = int(input("\nDigite o número da conta que deseja acessar: "))
+    
+    conta_alvo = None
+    for conta in lista_de_contas:
+        if conta.numero == num_conta:
+            conta_alvo = conta
+            break
+            
+    if conta_alvo:
+        menu_da_conta(conta_alvo)
+    else:
+        print("Erro! Conta não encontrada.")
+
+def menu_da_conta(conta):
+    while True:
+        print("\n" + "-" * 30)
+        print(f"Olá, {conta.cliente.nome}! | Conta Nº: {conta.numero}")
+        print(f"Saldo: R${conta.get_saldo():.2f}")
+        print("-" * 30)
+        print('''[1] Depositar
+[2] Sacar
+[3] Ver Extrato
+[4] Voltar ao menu principal''')
+        
+        opcao = int(input("Escolha uma opção: "))
+        
+        if opcao == 1:
+            valor = float(input("Valor do depósito: R$"))
+            sucesso, mensagem = conta.depositar(valor)
+            print(mensagem)
+        elif opcao == 2:
+            valor = float(input("Valor do saque: R$"))
+            sucesso, mensagem = conta.sacar(valor)
+            print(mensagem)
+        elif opcao == 3:
+            conta.mostrar_extrato()
+        elif opcao == 4:
+            print("Voltando ao menu principal...")
+            break
+        else:
+            print("Opção inválida!")
+
+# --- Programa Principal ---
+contas = [] # Esta é a sua lista de clientes (na verdade, de contas)
+while True:
+    opcao = menu_principal()
+    
+    if opcao == 1:
+        abrir_nova_conta(contas)
+    elif opcao == 2:
+        acessar_conta(contas)
+    elif opcao == 3:
+        listar_contas(contas)
+    elif opcao == 4:
+        print("Obrigado por usar nosso banco. Volte sempre!")
+        break
+    else:
+        print("Opção inválida! Por favor, escolha uma das opções do menu.")
